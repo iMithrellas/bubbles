@@ -455,6 +455,59 @@ func TestModel_SetRows(t *testing.T) {
 	}
 }
 
+func TestModel_SetRowsWithAnchor(t *testing.T) {
+	t.Run("cursor at top", func(t *testing.T) {
+		table := New(WithColumns(testCols))
+		table.SetHeight(5)
+
+		initialRows := make([]Row, 20)
+		for i := range initialRows {
+			initialRows[i] = Row{"original"}
+		}
+		table.SetRows(initialRows)
+
+		newRows := append([]Row{{"new"}}, initialRows...)
+		table.SetRowsWithAnchor(newRows, 1)
+
+		if table.viewport.YOffset != 1 {
+			t.Errorf("yoffset: want 1, got %d", table.viewport.YOffset)
+		}
+		if table.Cursor() != 1 {
+			t.Errorf("cursor: want 1, got %d", table.Cursor())
+		}
+	})
+
+	t.Run("cursor in middle (virtualization shift)", func(t *testing.T) {
+		table := New(WithColumns(testCols))
+		table.SetHeight(5)
+
+		initialRows := make([]Row, 20)
+		for i := range initialRows {
+			initialRows[i] = Row{"row"}
+		}
+		table.SetRows(initialRows)
+
+		table.SetCursor(10)
+		table.viewport.SetYOffset(0)
+
+		prependedCount := 5
+		newRows := make([]Row, 25)
+		for i := 0; i < prependedCount; i++ {
+			newRows[i] = Row{"new"}
+		}
+		copy(newRows[prependedCount:], initialRows)
+
+		table.SetRowsWithAnchor(newRows, prependedCount)
+
+		if table.viewport.YOffset != 0 {
+			t.Errorf("yoffset: want 0, got %d. View jumped!", table.viewport.YOffset)
+		}
+		if table.Cursor() != 15 {
+			t.Errorf("cursor: want 15, got %d", table.Cursor())
+		}
+	})
+}
+
 func TestModel_SetColumns(t *testing.T) {
 	table := New()
 
