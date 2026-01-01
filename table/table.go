@@ -319,15 +319,22 @@ func (m *Model) SetRows(r []Row) {
 // given number of prepended rows. Useful for reverse pagination.
 // Only use when prepending; appending doesn’t shift the viewport.
 func (m *Model) SetRowsWithAnchor(r []Row, prepended int) {
-	oldYOffset := m.viewport.YOffset
-
-	m.cursor = m.cursor + prepended
-	m.rows = r
-	if m.cursor > len(m.rows)-1 {
-		m.cursor = len(m.rows) - 1
+	oldStart := 0
+	if m.cursor >= 0 {
+		oldStart = clamp(m.cursor-m.viewport.Height, 0, m.cursor)
 	}
 
-	newYOffset := oldYOffset + prepended
+	m.cursor += prepended
+	m.rows = r
+	m.cursor = clamp(m.cursor, 0, len(m.rows)-1)
+
+	newStart := 0
+	if m.cursor >= 0 {
+		newStart = clamp(m.cursor-m.viewport.Height, 0, m.cursor)
+	}
+
+	startShift := newStart - oldStart
+	newYOffset := m.viewport.YOffset + prepended - startShift
 
 	m.UpdateViewport()
 	m.viewport.SetYOffset(newYOffset)
